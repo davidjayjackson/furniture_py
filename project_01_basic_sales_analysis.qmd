@@ -1,0 +1,60 @@
+---
+title: "Furniture Mark Sales Analysis"
+subtitle:  "Project 1: Basic Sales Reporting"
+format: html
+jupyter: python3
+---
+```{python}
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import matplotlib.pyplot as plt
+```
+
+```{python}
+# Load the sales data (adjust the file path as needed)
+sales = pd.read_excel('./furniture.xlsx')
+```
+```{python}
+# Convert date columns to datetime
+sales['order_date'] = pd.to_datetime(sales['order_date'])
+sales['ship_date'] = pd.to_datetime(sales['ship_date'])
+```
+## Table of Contents
+
+ 1. Generate a report that shows total sales, total quantity, and total profit for the entire year.
+ 2. Create a summary table showing total sales by month.
+ 3. Provide a breakdown of sales by product category and sub-category.
+ 4. Identify the top 10 products by total sales.
+ 5. Write queries that summarize total sales, total profit, and total discount by shipping mode.
+
+##  1. Generate a report that shows total sales, total quantity, and total profit for the entire year
+
+```{python}
+
+
+```
+
+## 2. Create a summary table showing total sales by month.
+
+```{python}
+
+
+```
+
+##  3. Provide a breakdown of sales by product category and sub-category.
+
+```{python}
+
+```
+
+##  4. Identify the top 10 products by total sales
+
+```{python}
+
+
+```
+
+##  Write queries that summarize total sales, total profit, and total discount by shipping mode.
+
+```{python}

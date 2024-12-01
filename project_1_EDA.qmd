@@ -1,0 +1,46 @@
+---
+title: "Furniture Mark Sales Analysis"
+subtitle:  "Project 1: Basic Sales Reporting"
+format: html
+jupyter: python3
+---
+```{python}
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import matplotlib.pyplot as plt
+```
+
+```{python}
+# Load the sales data (adjust the file path as needed)
+sales = pd.read_excel('./furniture.xlsx')
+# Filter rows where total_sales > 0
+```
+```{python}
+# Convert date columns to datetime
+sales['order_date'] = pd.to_datetime(sales['order_date'])
+sales['ship_date'] = pd.to_datetime(sales['ship_date'])
+```
+# Objective: Create simple reports to track key performance metrics
+```{python}
+sales.head()
+```
+# Analysis of Price
+
+```{python}
+sns.boxplot(x='profit',data=sales)
+```
+```{python}
+sns.histplot(x='profit',data=sales)
+```
+# Analysis of total_sales
+
+```{python}
+sns.boxplot(x='total_sales',data=sales)
+```
+```{python}
+sns.histplot(x='total_sales',data=sales)
+```
+# Requirements
+
+#### 
