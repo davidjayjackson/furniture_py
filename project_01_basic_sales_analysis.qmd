@@ -6,19 +6,18 @@ jupyter: python3
 ---
 ```{python}
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-import matplotlib.pyplot as plt
-```
 
-```{python}
 # Load the sales data (adjust the file path as needed)
 sales = pd.read_excel('./furniture.xlsx')
-```
-```{python}
 # Convert date columns to datetime
 sales['order_date'] = pd.to_datetime(sales['order_date'])
 sales['ship_date'] = pd.to_datetime(sales['ship_date'])
+```
+```{python}
+sales[['quantity','total_sales','profit']].describe()
 ```
 ## Table of Contents
 
@@ -31,20 +30,158 @@ sales['ship_date'] = pd.to_datetime(sales['ship_date'])
 ##  1. Generate a report that shows total sales, total quantity, and total profit for the entire year
 
 ```{python}
+import pandas as pd
+import matplotlib.pyplot as plt
+from itables import show
+import itables.options as opt
+
+# Load the data (replace this with the actual file path if not already loaded)
+file_path = './furniture.xlsx'
+sales = pd.read_excel(file_path, sheet_name='sales')
+
+# Ensure order_date is in datetime format
+sales['order_date'] = pd.to_datetime(sales['order_date'])
+
+# Extract year from order_date
+sales['year'] = sales['order_date'].dt.year
+
+# Group data by year and calculate totals
+yearly_summary = sales.groupby('year').agg({
+    'total_sales': 'sum',
+    'quantity': 'sum',
+    'profit': 'sum'
+}).reset_index()
+
+# Display the yearly summary
+show(yearly_summary)
+
+# Plotting
+plt.figure(figsize=(12, 8))
+
+# Total Sales Plot
+plt.subplot(3, 1, 1)
+plt.bar(yearly_summary['year'], yearly_summary['total_sales'], label='Total Sales', alpha=0.7)
+plt.title('Total Sales by Year')
+plt.ylabel('Sales')
+plt.xticks(yearly_summary['year'])
+plt.legend()
+
+# Total Quantity Plot
+plt.subplot(3, 1, 2)
+plt.bar(yearly_summary['year'], yearly_summary['quantity'], label='Total Quantity', color='orange', alpha=0.7)
+plt.title('Total Quantity by Year')
+plt.ylabel('Quantity')
+plt.xticks(yearly_summary['year'])
+plt.legend()
+
+# Total Profit Plot
+plt.subplot(3, 1, 3)
+plt.bar(yearly_summary['year'], yearly_summary['profit'], label='Total Profit', color='green', alpha=0.7)
+plt.title('Total Profit by Year')
+plt.ylabel('Profit')
+plt.xticks(yearly_summary['year'])
+plt.legend()
+
+plt.tight_layout()
+plt.show()
 
 
 ```
 
-## 2. Create a summary table showing total sales by month.
+## 2. Create a summary table showing total sales by year and month.
 
 ```{python}
+from itables import show
+import itables.options as opt
+import matplotlib.pyplot as plt
+
+# Configure itables options (optional)
+opt.maxBytes = 0  # Display all rows regardless of size
+opt.maxColumns = 0  # Display all columns
+
+# Extract year and month from the order_date
+sales['year'] = sales['order_date'].dt.year
+sales['month'] = sales['order_date'].dt.month
+
+# Group data by year and month and calculate total sales
+monthly_yearly_summary = sales.groupby(['year', 'month']).agg({
+    'total_sales': 'sum'
+}).reset_index()
+
+# Rename columns for better readability
+monthly_yearly_summary.rename(columns={'total_sales': 'Total Sales', 'year': 'Year', 'month': 'Month'}, inplace=True)
+
+# Display the summary table interactively using itables
+show(monthly_yearly_summary)
+
+# Plotting
+plt.figure(figsize=(12, 8))
+for year in monthly_yearly_summary['Year'].unique():
+    # Filter data for each year
+    year_data = monthly_yearly_summary[monthly_yearly_summary['Year'] == year]
+    plt.plot(year_data['Month'], year_data['Total Sales'], marker='o', label=f'Year {year}')
+
+# Add titles and labels
+plt.title('Total Sales by Month and Year')
+plt.xlabel('Month')
+plt.ylabel('Total Sales')
+plt.xticks(ticks=range(1, 13), labels=[
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+])
+plt.legend(title='Year')
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.show()
 
 
 ```
 
-##  3. Provide a breakdown of sales by product category and sub-category.
+
+##  3. Provide a breakdown of sales by product  sub-category.
 
 ```{python}
+from itables import show
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Group data by sub_category and year, and calculate total sales
+sub_category_yearly_summary = sales.groupby(['sub_category', 'year']).agg({
+    'total_sales': 'sum'
+}).reset_index()
+
+# Pivot the data for easier plotting
+pivot_data = sub_category_yearly_summary.pivot(index='sub_category', columns='year', values='total_sales').fillna(0)
+
+# Display the interactive table
+show(pivot_data)
+
+# Plotting
+plt.figure(figsize=(12, 8))
+
+# Stacked bar chart for each sub-category
+sub_categories = pivot_data.index
+years = pivot_data.columns
+bar_width = 0.5
+
+# Generate the bar positions
+x = np.arange(len(sub_categories))
+
+# Plot each year as a stacked bar
+bottom = np.zeros(len(sub_categories))
+for year in years:
+    plt.bar(x, pivot_data[year], label=f'Year {year}', bottom=bottom, width=bar_width)
+    bottom += pivot_data[year]
+
+# Add titles and labels
+plt.title('Total Sales by Sub-Category and Year')
+plt.xlabel('Sub-Category')
+plt.ylabel('Total Sales')
+plt.xticks(ticks=x, labels=sub_categories, rotation=45, ha='right')
+plt.legend(title='Year')
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.tight_layout()
+plt.show()
+
 
 ```
 
