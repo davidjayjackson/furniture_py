@@ -1,0 +1,172 @@
+---
+title: "Furniture Mark Sales Analysis"
+subtitle:  "Project 2: Customer Segmentation"
+format:
+  html:
+    page-layout: full
+    embed-resources: true
+    grid:
+      body-width: 1200px
+    fontsize: 10pt
+  pdf: default
+echo: false
+warning: false
+toc: true
+jupyter: python3
+---
+```{python}
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from itables import show
+
+# Load the sales data (adjust the file path as needed)
+sales = pd.read_excel('./furniture.xlsx')
+# Convert date columns to datetime
+sales['order_date'] = pd.to_datetime(sales['order_date'])
+sales['ship_date'] = pd.to_datetime(sales['ship_date'])
+
+#sales.head()
+```
+### 1. Create customer profiles by summarizing total sales and profit per customer
+
+```{python}
+import pandas as pd
+import matplotlib.pyplot as plt
+from itables import show
+
+# Load the data from the Excel file
+sales = pd.read_excel('furniture.xlsx', sheet_name='sales')
+
+# Summarize total sales and profit per customer
+customer_profiles = sales.groupby(['customer_name']).agg(
+    total_sales=('total_sales', 'sum'),
+    total_profit=('profit', 'sum')
+).reset_index()
+
+# Display the customer profiles summary table using itables
+show(customer_profiles, caption="Customer Profiles: Total Sales and Profit")
+
+# Top 10 customers by total sales
+top_customers_by_sales = customer_profiles.sort_values('total_sales', ascending=False).head(10)
+
+# Plot the top customers by total sales
+plt.figure(figsize=(12, 6))
+plt.barh(top_customers_by_sales['customer_name'], top_customers_by_sales['total_sales'], color='skyblue')
+plt.xlabel('Total Sales')
+plt.ylabel('Customer Name')
+plt.title('Top 10 Customers by Total Sales')
+plt.gca().invert_yaxis()  # Reverse order for better readability
+plt.show()
+
+# Top 10 customers by total profit
+top_customers_by_profit = customer_profiles.sort_values('total_profit', ascending=False).head(10)
+
+# Plot the top customers by total profit
+plt.figure(figsize=(12, 6))
+plt.barh(top_customers_by_profit['customer_name'], top_customers_by_profit['total_profit'], color='lightgreen')
+plt.xlabel('Total Profit')
+plt.ylabel('Customer Name')
+plt.title('Top 10 Customers by Total Profit')
+plt.gca().invert_yaxis()  # Reverse order for better readability
+plt.show()
+
+
+
+```
+
+### 2. Group customers by market segment and provide the total number of customers, average sales  per customer, and total profit per segment.
+
+```{python}
+import matplotlib.pyplot as plt
+
+# Group customers by market segment and calculate the required metrics
+segment_analysis = sales.groupby('market_segment').agg(
+    total_customers=('customer_id', pd.Series.nunique),
+    avg_sales_per_customer=('total_sales', lambda x: x.sum() / x.nunique()),
+    total_profit=('profit', 'sum')
+).reset_index()
+
+# Rename columns for better readability
+segment_analysis.rename(columns={
+    'market_segment': 'Market Segment',
+    'total_customers': 'Total Customers',
+    'avg_sales_per_customer': 'Average Sales per Customer',
+    'total_profit': 'Total Profit'
+}, inplace=True)
+
+# Plot 1: Total Customers by Market Segment
+plt.figure(figsize=(10, 6))
+plt.bar(segment_analysis['Market Segment'], segment_analysis['Total Customers'], color='lightblue')
+plt.xlabel('Market Segment')
+plt.ylabel('Total Customers')
+plt.title('Total Customers by Market Segment')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+# Plot 2: Total Profit by Market Segment
+plt.figure(figsize=(10, 6))
+plt.bar(segment_analysis['Market Segment'], segment_analysis['Total Profit'], color='lightgreen')
+plt.xlabel('Market Segment')
+plt.ylabel('Total Profit')
+plt.title('Total Profit by Market Segment')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+# Display the analysis table using itables
+from itables import show
+show(segment_analysis, caption="Market Segment Analysis: Customers, Sales, and Profit")
+
+
+```
+
+### 3. Identify the top 10 customers by total sales and their respective regions
+
+```{python}
+# Group customers by customer name and region, and calculate total sales
+top_customers = sales.groupby(['customer_name', 'region']).agg(
+    total_sales=('total_sales', 'sum')
+).reset_index()
+
+# Sort customers by total sales in descending order
+top_customers = top_customers.sort_values('total_sales', ascending=False).head(10)
+
+# Rename columns for better readability
+top_customers.rename(columns={
+    'customer_name': 'Customer Name',
+    'region': 'Region',
+    'total_sales': 'Total Sales'
+}, inplace=True)
+
+# Display the top 10 customers using itables
+from itables import show
+show(top_customers, caption="Top 10 Customers by Total Sales with Regions")
+
+
+
+# Plot: Top 10 Customers by Total Sales with Regions
+plt.figure(figsize=(12, 6))
+plt.barh(top_customers['Customer Name'], top_customers['Total Sales'], color='skyblue')
+plt.xlabel('Total Sales')
+plt.ylabel('Customer Name')
+plt.title('Top 10 Customers by Total Sales')
+plt.gca().invert_yaxis()  # Reverse order for better readability
+plt.tight_layout()
+plt.show()
+
+
+
+```
+
+####  4. Identify which products are most popular in each market segment
+
+```{python}
+
+
+
+```
+
+#### 5. Analyze customer purchasing frequency (e.g., customers who have made more than 3  purchases)
