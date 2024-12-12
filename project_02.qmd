@@ -32,12 +32,7 @@ sales['ship_date'] = pd.to_datetime(sales['ship_date'])
 ### 1. Create customer profiles by summarizing total sales and profit per customer
 
 ```{python}
-import pandas as pd
-import matplotlib.pyplot as plt
-from itables import show
 
-# Load the data from the Excel file
-sales = pd.read_excel('furniture.xlsx', sheet_name='sales')
 
 # Summarize total sales and profit per customer
 customer_profiles = sales.groupby(['customer_name']).agg(
@@ -46,7 +41,7 @@ customer_profiles = sales.groupby(['customer_name']).agg(
 ).reset_index()
 
 # Display the customer profiles summary table using itables
-show(customer_profiles, caption="Customer Profiles: Total Sales and Profit")
+# show(customer_profiles, caption="Customer Profiles: Total Sales and Profit")
 
 # Top 10 customers by total sales
 top_customers_by_sales = customer_profiles.sort_values('total_sales', ascending=False).head(10)
@@ -79,7 +74,7 @@ plt.show()
 ### 2. Group customers by market segment and provide the total number of customers, average sales  per customer, and total profit per segment.
 
 ```{python}
-import matplotlib.pyplot as plt
+
 
 # Group customers by market segment and calculate the required metrics
 segment_analysis = sales.groupby('market_segment').agg(
@@ -117,8 +112,8 @@ plt.tight_layout()
 plt.show()
 
 # Display the analysis table using itables
-from itables import show
-show(segment_analysis, caption="Market Segment Analysis: Customers, Sales, and Profit")
+# from itables import show
+# show(segment_analysis, caption="Market Segment Analysis: Customers, Sales, and Profit")
 
 
 ```
@@ -142,8 +137,8 @@ top_customers.rename(columns={
 }, inplace=True)
 
 # Display the top 10 customers using itables
-from itables import show
-show(top_customers, caption="Top 10 Customers by Total Sales with Regions")
+# from itables import show
+# show(top_customers, caption="Top 10 Customers by Total Sales with Regions")
 
 
 
@@ -161,12 +156,67 @@ plt.show()
 
 ```
 
-####  4. Identify which products are most popular in each market segment
+### 4. Identify which products are most popular in each market segment
 
 ```{python}
 
 
+# Identify top 2 most popular products in each market segment by total sales
+top_products_per_segment = (
+    sales.groupby('market_segment')['product_name']
+    .value_counts()
+    .groupby(level='market_segment')
+    .head(2)
+    .reset_index(name='Count')
+)
+
+# Print the results
+print(top_products_per_segment)
+
+# Plot top 2 products by total sales for each market segment (optional)
+market_segments = top_products_per_segment['market_segment'].unique()
+fig, axes = plt.subplots(len(market_segments), figsize=(10, 6))
+
+for i, segment in enumerate(market_segments):
+    segment_data = sales[sales['market_segment'] == segment]
+    segment_data.groupby('product_name')['total_sales'].sum().head(2).plot(kind='barh', ax=axes[i])  # Horizontal bar plot
+    axes[i].set_title(f'Top 2 Products by Total Sales ({segment})')
+    axes[i].set_ylabel('Product Name')
+    axes[i].set_xlabel('Total Sales')
+
+plt.tight_layout()
+plt.show()
 
 ```
 
-#### 5. Analyze customer purchasing frequency (e.g., customers who have made more than 3  purchases)
+### 5. Analyze customer purchasing frequency (e.g., customers who have made more than 3  purchases)
+
+```{python}
+
+# Assuming 'order_date' is in datetime format
+sales['order_date'] = pd.to_datetime(sales['order_date'])
+
+# Group by customer ID and count the number of orders
+customer_orders = sales.groupby('customer_id')['order_date'].count()
+
+# Filter customers with more than 3 purchases
+frequent_customers = customer_orders[customer_orders > 3]
+
+# Print the number of frequent customers
+# print("Number of frequent customers:", len(frequent_customers))
+
+# Analyze purchase patterns of frequent customers
+frequent_customers_df = sales[sales['customer_id'].isin(frequent_customers.index)]
+
+# Calculate average purchase interval
+frequent_customers_df['order_interval'] = frequent_customers_df.groupby('customer_id')['order_date'].diff()
+avg_purchase_interval = frequent_customers_df['order_interval'].mean()
+# print("Average purchase interval:", avg_purchase_interval)
+
+# Visualize purchase frequency distribution
+plt.hist(customer_orders, bins=20)
+plt.xlabel('Number of Purchases')
+plt.ylabel('Number of Customers')
+plt.title('Customer Purchase Frequency Distribution')
+plt.show()
+```
