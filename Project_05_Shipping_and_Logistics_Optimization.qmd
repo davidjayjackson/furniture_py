@@ -1,0 +1,149 @@
+---
+title: "Furniture Mark Sales Analysis"
+subtitle:  "Project 5: Shipping and Logistics Optimization"
+format:
+  html:
+    page-layout: full
+    embed-resources: true
+    grid:
+      body-width: 1200px
+    fontsize: 10pt
+  pdf: default
+echo: false
+warning: false
+toc: true
+jupyter: python3
+---
+```{python}
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Load the uploaded Excel file to preview the data
+file_path = 'furniture.xlsx'
+data = pd.ExcelFile(file_path)
+
+# Load the 'sales' sheet to inspect its structure
+sales = data.parse('sales')
+
+# Convert order_date and ship_date to datetime
+sales['order_date'] = pd.to_datetime(sales['order_date'])
+sales['ship_date'] = pd.to_datetime(sales['ship_date'])
+
+# Calculate the shipping time in days
+sales['shipping_time_days'] = (sales['ship_date'] - sales['order_date']).dt.days
+
+# Group by ship_mode and calculate the average shipping time
+average_shipping_time_by_mode = sales.groupby('ship_mode')['shipping_time_days'].mean().reset_index()
+```
+
+# Plot the average shipping time by shipping mode
+
+```{python}
+plt.figure(figsize=(10, 6))
+plt.bar(average_shipping_time_by_mode['ship_mode'], average_shipping_time_by_mode['shipping_time_days'], color='skyblue')
+plt.xlabel('Shipping Mode')
+plt.ylabel('Average Shipping Time (days)')
+plt.title('Average Shipping Time by Shipping Mode')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+```
+# Identify the regions with the longest average shipping times
+
+```{python}
+average_shipping_time_by_region = sales.groupby('region')['shipping_time_days'].mean().reset_index()
+longest_shipping_regions = average_shipping_time_by_region.sort_values(by='shipping_time_days', ascending=False)
+
+# Visualize the top regions with the longest shipping times
+top_regions = longest_shipping_regions.head(5)  # Top 5 regions with the longest shipping times
+plt.figure(figsize=(12, 8))
+plt.bar(top_regions['region'], top_regions['shipping_time_days'], color='red')
+plt.xlabel('Region')
+plt.ylabel('Average Shipping Time (days)')
+plt.title('Top 5 Regions with Longest Shipping Times')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+```
+# Provide insights into which shipping mode yields the highest profit margin.
+
+```{python}
+# Calculate the profit margin for each shipping mode
+sales['profit_margin'] = (sales['profit'] / sales['total_sales']) * 100
+
+# Identify the shipping mode with the highest average profit margin
+profit_margin_by_mode = sales.groupby('ship_mode')['profit_margin'].mean().reset_index()
+highest_profit_mode = profit_margin_by_mode.sort_values(by='profit_margin', ascending=False)
+
+# Visualize the profit margins by shipping mode
+plt.figure(figsize=(10, 6))
+plt.bar(highest_profit_mode['ship_mode'], highest_profit_mode['profit_margin'], color='green')
+plt.xlabel('Shipping Mode')
+plt.ylabel('Average Profit Margin (%)')
+plt.title('Average Profit Margin by Shipping Mode')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+```
+
+###  Analyze any correlations between shipping times and total sales or customer satisfaction (if data  is available).
+
+```{python}
+# Plot 1: Sales Trends Over Time (using 'order_date' and 'total_sales' column)
+sales['order_date'] = pd.to_datetime(sales['order_date'])  # Ensure 'order_date' column is datetime
+time_trends = sales.groupby('order_date')['total_sales'].sum().reset_index()
+plt.figure(figsize=(10, 6))
+plt.plot(time_trends['order_date'], time_trends['total_sales'], marker='o', label='Total Sales')
+plt.title('Sales Trends Over Time')
+plt.xlabel('Order Date')
+plt.ylabel('Total Sales')
+plt.legend()
+plt.grid()
+plt.show()
+
+# Plot 2: Sub-Category Distribution (assuming there is a 'sub_category' column)
+plt.figure(figsize=(8, 6))
+sales['sub_category'].value_counts().plot(kind='bar', color='skyblue')
+plt.title('Sales Distribution by Sub-Category')
+plt.xlabel('Sub-Category')
+plt.ylabel('Count')
+plt.show()
+
+# Plot 3: Correlation Heatmap
+plt.figure(figsize=(10, 8))
+correlation = sales.select_dtypes(include=['float64', 'int64']).corr()
+sns.heatmap(correlation, annot=True, cmap='coolwarm', fmt='.2f')
+plt.title('Correlation Heatmap')
+plt.show()
+
+
+
+
+```
+
+###  Recommend the best shipping modes for high-value customers based on historical data
+
+```{python}
+# Assuming there are columns 'customer_id', 'total_sales', 'ship_mode'
+high_value_customers = sales.groupby('customer_id')['total_sales'].sum().reset_index()
+high_value_customers = high_value_customers[high_value_customers['total_sales'] > high_value_customers['total_sales'].quantile(0.75)]
+
+high_value_shipping = sales[sales['customer_id'].isin(high_value_customers['customer_id'])]
+best_shipping_modes = high_value_shipping.groupby('ship_mode')['total_sales'].sum().sort_values(ascending=False)
+
+# print("Best Shipping Modes for High-Value Customers:")
+# print(best_shipping_modes)
+
+# Visualize Best Shipping Modes
+plt.figure(figsize=(8, 6))
+best_shipping_modes.plot(kind='bar', color='coral')
+plt.title('Best Shipping Modes for High-Value Customers')
+plt.xlabel('Shipping Mode')
+plt.ylabel('Total Sales')
+plt.show()
+
+
+
+
+```
