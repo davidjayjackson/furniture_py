@@ -1,0 +1,38 @@
+---
+title: "Furniture Mark Sales Analysis"
+subtitle:  "Project 2: Customer Segmentation"
+format:
+  html:
+    page-layout: full
+    embed-resources: true
+    grid:
+      body-width: 1200px
+    fontsize: 10pt
+  pdf: default
+echo: false
+warning: false
+toc: true
+jupyter: python3
+---
+```{python}
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from itables import show
+
+# Load the sales data (adjust the file path as needed)
+sales = pd.read_excel('./furniture.xlsx')
+# Convert date columns to datetime
+sales['order_date'] = pd.to_datetime(sales['order_date'])
+sales['ship_date'] = pd.to_datetime(sales['ship_date'])
+
+sales.shape
+```
+```{python}
+sales.dtypes
+```
+```{python}
+sales.isnull().sum()
+```
+

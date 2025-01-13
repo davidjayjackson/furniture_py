@@ -1,0 +1,151 @@
+---
+title: "Furniture Mark Sales Analysis"
+subtitle:  "Project 4: Inventory and Product Analytics"
+format:
+  html:
+    page-layout: full
+    embed-resources: true
+    grid:
+      body-width: 1200px
+    fontsize: 10pt
+  pdf: default
+echo: false
+warning: false
+toc: true
+jupyter: python3
+---
+```{python}
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Load the furniture sales data
+data_file = 'furniture.xlsx'
+
+# Load the Excel file and sheet names
+xls = pd.ExcelFile(data_file)
+sheet_names = xls.sheet_names
+
+# Load the 'sales' sheet for examination
+sales = xls.parse('sales')
+
+# Convert date columns to datetime if they exist
+if 'order_date' in sales.columns:
+    sales['order_date'] = pd.to_datetime(sales['order_date'])
+
+# Filter data for the last year (assuming the last date in the data as the reference point)
+reference_date = sales['order_date'].max()
+one_year_ago = reference_date - pd.DateOffset(years=1)
+
+# Filter for data within the last year
+last_year_data = sales[sales['order_date'] >= one_year_ago]
+
+# Calculate the number of unique products sold within the last year
+unique_products_sold = last_year_data['product_name'].nunique()
+print(f"Total number of unique products sold within the last year: {unique_products_sold}")
+
+# Create a plot for the number of unique products sold each month in the last year
+last_year_data['month'] = last_year_data['order_date'].dt.to_period('M')
+monthly_unique_products = last_year_data.groupby('month')['product_name'].nunique()
+```
+# Plot the monthly unique products
+```{python}
+plt.figure(figsize=(10, 6))
+monthly_unique_products.plot(kind='bar', color='skyblue', edgecolor='black')
+plt.title('Unique Products Sold Each Month in the Last Year', fontsize=14)
+plt.xlabel('Month', fontsize=12)
+plt.ylabel('Number of Unique Products', fontsize=12)
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+```
+
+# Rank products by profit margin and identify the top 10 high-margin products
+```{python}
+if 'profit' in sales.columns and 'total_sales' in sales.columns:
+    sales['profit_margin'] = sales['profit'] / sales['total_sales']
+    top_10_high_margin_products = sales.groupby('product_name')['profit_margin'].mean().sort_values(ascending=False).head(10)
+    print("Top 10 High-Margin Products:")
+    print(top_10_high_margin_products)
+
+    # Visualize the top 10 products' profits
+    top_10_profits = sales[sales['product_name'].isin(top_10_high_margin_products.index)].groupby('product_name')['profit'].sum()
+    plt.figure(figsize=(10, 6))
+    top_10_profits.sort_values(ascending=False).plot(kind='bar', color='green', edgecolor='black')
+    plt.title('Top 10 Products by Profit', fontsize=14)
+    plt.xlabel('Product Name', fontsize=12)
+    plt.ylabel('Total Profit', fontsize=12)
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+```
+# Calculate product sales velocity (units sold per month)
+
+```{python}
+if 'quantity' in sales.columns:
+    sales['month'] = sales['order_date'].dt.to_period('M')
+    product_sales_velocity = sales.groupby('product_name')['quantity'].sum() / sales['month'].nunique()
+    print("Product Sales Velocity (units sold per month):")
+    print(product_sales_velocity.sort_values(ascending=False).head(10))
+
+    # Visualize sales velocity for top products
+    top_velocity_products = product_sales_velocity.sort_values(ascending=False).head(10)
+    plt.figure(figsize=(10, 6))
+    top_velocity_products.plot(kind='bar', color='orange', edgecolor='black')
+    plt.title('Top Products by Sales Velocity', fontsize=14)
+    plt.xlabel('Product Name', fontsize=12)
+    plt.ylabel('Units Sold Per Month', fontsize=12)
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+```
+# Identify products with declining sales or no sales in the last 6 months
+```{python}
+six_months_ago = reference_date - pd.DateOffset(months=6)
+recent_sales_data = sales[sales['order_date'] >= six_months_ago]
+products_with_sales = recent_sales_data['product_name'].unique()
+products_declining_or_no_sales = sales[~sales['product_name'].isin(products_with_sales)]['product_name'].unique()
+
+# print("Products with declining sales or no sales in the last 6 months:")
+# print(products_declining_or_no_sales)
+
+# Visualize declining sales trends for top 10 declining products
+declining_sales_data = sales[sales['product_name'].isin(products_declining_or_no_sales)]
+top_declining_products = declining_sales_data.groupby('product_name')['quantity'].sum().sort_values().head(10).index
+declining_sales_trend = declining_sales_data[declining_sales_data['product_name'].isin(top_declining_products)].groupby([declining_sales_data['order_date'].dt.to_period('M'), 'product_name'])['quantity'].sum().unstack(fill_value=0)
+
+plt.figure(figsize=(12, 8))
+for product in declining_sales_trend.columns:
+    plt.plot(declining_sales_trend.index.to_timestamp(), declining_sales_trend[product], label=f'{product}')
+
+plt.title('Declining Sales Trends for Top 10 Products Over Time', fontsize=16)
+plt.xlabel('Month', fontsize=14)
+plt.ylabel('Units Sold', fontsize=14)
+plt.legend(title='Products', bbox_to_anchor=(1.05, 1), loc='upper left')
+plt.tight_layout()
+plt.show()
+```
+
+# Calculate inventory turnover for each product category and sub-category
+```{python}
+if 'quantity' in sales.columns and 'sub_category' in sales.columns:
+    inventory_turnover = sales.groupby(['sub_category'])['quantity'].sum() / sales['month'].nunique()
+    inventory_turnover = inventory_turnover.reset_index()
+    inventory_turnover.columns = ['Sub-Category', 'Turnover']
+    print("Inventory Turnover Report:")
+    print(inventory_turnover)
+
+    # Save report to a CSV file
+    # inventory_turnover.to_csv('/inventory_turnover_report.csv', index=False)
+    # print("Inventory turnover report saved as 'inventory_turnover_report.csv'")
+
+    # Visualize inventory turnover by sub-category
+    plt.figure(figsize=(12, 8))
+    inventory_turnover.set_index('Sub-Category').sort_values('Turnover', ascending=False).plot(kind='bar', color='purple', edgecolor='black', legend=False)
+    plt.title('Inventory Turnover by Sub-Category', fontsize=14)
+    plt.xlabel('Sub-Category', fontsize=12)
+    plt.ylabel('Turnover', fontsize=12)
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+
+```

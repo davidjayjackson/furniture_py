@@ -1,0 +1,376 @@
+---
+title: "Furniture Mark Sales Analysis"
+subtitle:  "Project 3: Sales Performance Dashboard"
+format:
+  html:
+    page-layout: full
+    embed-resources: true
+    grid:
+      body-width: 1200px
+    fontsize: 10pt
+  pdf: default
+echo: false
+warning: false
+toc: true
+jupyter: python3
+---
+```{python}
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from itables import show
+
+# Load the sales data (adjust the file path as needed)
+sales = pd.read_excel('./furniture.xlsx')
+# Convert date columns to datetime
+sales['order_date'] = pd.to_datetime(sales['order_date'])
+sales['ship_date'] = pd.to_datetime(sales['ship_date'])
+
+sales.shape
+```
+```{python}
+sales.dtypes
+```
+```{python}
+sales.isnull().sum()
+```
+##  Objective: Build a SQL-driven sales dashboard that tracks key performance indicators (KPIs).
+
+### 1. Show total sales, profit, and quantity sold for the current month compared to the previous month.
+```{python}
+
+# Ensure date column is in datetime format
+sales['order_date'] = pd.to_datetime(sales['order_date'])
+
+# Extract year and month for grouping
+sales['year_month'] = sales['order_date'].dt.to_period('M')
+
+# Aggregate total sales, profit, and quantity by month
+monthly_summary = sales.groupby('year_month').agg({
+    'total_sales': 'sum',
+    'profit': 'sum',
+    'quantity': 'sum'
+}).reset_index()
+
+# Sort by year and month
+monthly_summary = monthly_summary.sort_values('year_month')
+
+# Get the current and previous months
+define_last_two_months = monthly_summary['year_month'].iloc[-2:]
+current_month, previous_month = define_last_two_months
+
+# Filter data for the current and previous months
+current_month_data = monthly_summary[monthly_summary['year_month'] == current_month]
+previous_month_data = monthly_summary[monthly_summary['year_month'] == previous_month]
+
+# Plot comparison of sales, profit, and quantity
+plt.figure(figsize=(15, 5))
+
+# Plot total sales comparison
+plt.subplot(1, 3, 1)
+plt.bar(['Previous Month', 'Current Month'], [previous_month_data['total_sales'].values[0], current_month_data['total_sales'].values[0]])
+plt.title('Total Sales Comparison')
+plt.ylabel('Total Sales')
+
+# Plot profit comparison
+plt.subplot(1, 3, 2)
+plt.bar(['Previous Month', 'Current Month'], [previous_month_data['profit'].values[0], current_month_data['profit'].values[0]])
+plt.title('Profit Comparison')
+plt.ylabel('Profit')
+
+# Plot quantity comparison
+plt.subplot(1, 3, 3)
+plt.bar(['Previous Month', 'Current Month'], [previous_month_data['quantity'].values[0], current_month_data['quantity'].values[0]])
+plt.title('Quantity Sold Comparison')
+plt.ylabel('Quantity')
+
+plt.tight_layout()
+plt.show()
+
+
+
+
+```
+### 2. Display a breakdown of sales by region and market segment.
+
+```{python}
+
+
+# Ensure date column is in datetime format
+sales['order_date'] = pd.to_datetime(sales['order_date'])
+
+# Extract year and month for grouping
+sales['year_month'] = sales['order_date'].dt.to_period('M')
+
+# Aggregate total sales, profit, and quantity by month
+monthly_summary = sales.groupby('year_month').agg({
+    'total_sales': 'sum',
+    'profit': 'sum',
+    'quantity': 'sum'
+}).reset_index()
+
+# Sort by year and month
+monthly_summary = monthly_summary.sort_values('year_month')
+
+# Get the current and previous months
+define_last_two_months = monthly_summary['year_month'].iloc[-2:]
+current_month, previous_month = define_last_two_months
+
+# Filter data for the current and previous months
+current_month_data = monthly_summary[monthly_summary['year_month'] == current_month]
+previous_month_data = monthly_summary[monthly_summary['year_month'] == previous_month]
+
+
+# Plot comparison of sales, profit, and quantity
+plt.figure(figsize=(15, 5))
+
+# Plot total sales comparison
+plt.subplot(1, 3, 1)
+plt.bar(['Previous Month', 'Current Month'], [previous_month_data['total_sales'].values[0], current_month_data['total_sales'].values[0]])
+plt.title('Total Sales Comparison')
+plt.ylabel('Total Sales')
+
+# Plot profit comparison
+plt.subplot(1, 3, 2)
+plt.bar(['Previous Month', 'Current Month'], [previous_month_data['profit'].values[0], current_month_data['profit'].values[0]])
+plt.title('Profit Comparison')
+plt.ylabel('Profit')
+
+# Plot quantity comparison
+plt.subplot(1, 3, 3)
+plt.bar(['Previous Month', 'Current Month'], [previous_month_data['quantity'].values[0], current_month_data['quantity'].values[0]])
+plt.title('Quantity Sold Comparison')
+plt.ylabel('Quantity')
+
+plt.tight_layout()
+plt.show()
+
+# Breakdown of sales by region and market segment
+region_segment_summary = sales.groupby(['region', 'market_segment']).agg({
+    'total_sales': 'sum'
+}).reset_index()
+
+
+# Plot sales by region and market segment
+plt.figure(figsize=(12, 6))
+
+# Pivot for easier plotting
+pivot_data = region_segment_summary.pivot(index='region', columns='market_segment', values='total_sales')
+pivot_data.plot(kind='bar', stacked=True, figsize=(12, 6))
+
+plt.title('Sales by Region and Market Segment')
+plt.ylabel('Total Sales')
+plt.xlabel('Region')
+plt.legend(title='Market Segment')
+plt.tight_layout()
+plt.show()
+
+
+```
+### 3. Create KPIs for average order value (AOV), customer lifetime value (CLV), and profit margin.
+
+```{python}
+
+# Ensure date column is in datetime format
+sales['order_date'] = pd.to_datetime(sales['order_date'])
+
+# Extract year and month for grouping
+sales['year_month'] = sales['order_date'].dt.to_period('M')
+
+# Aggregate total sales, profit, and quantity by month
+monthly_summary = sales.groupby('year_month').agg({
+    'total_sales': 'sum',
+    'profit': 'sum',
+    'quantity': 'sum'
+}).reset_index()
+
+# Sort by year and month
+monthly_summary = monthly_summary.sort_values('year_month')
+
+# Get the current and previous months
+define_last_two_months = monthly_summary['year_month'].iloc[-2:]
+current_month, previous_month = define_last_two_months
+
+# Filter data for the current and previous months
+current_month_data = monthly_summary[monthly_summary['year_month'] == current_month]
+previous_month_data = monthly_summary[monthly_summary['year_month'] == previous_month]
+
+# Plot comparison of sales, profit, and quantity
+plt.figure(figsize=(15, 5))
+
+# Plot total sales comparison
+plt.subplot(1, 3, 1)
+plt.bar(['Previous Month', 'Current Month'], [previous_month_data['total_sales'].values[0], current_month_data['total_sales'].values[0]])
+plt.title('Total Sales Comparison')
+plt.ylabel('Total Sales')
+
+# Plot profit comparison
+plt.subplot(1, 3, 2)
+plt.bar(['Previous Month', 'Current Month'], [previous_month_data['profit'].values[0], current_month_data['profit'].values[0]])
+plt.title('Profit Comparison')
+plt.ylabel('Profit')
+
+# Plot quantity comparison
+plt.subplot(1, 3, 3)
+plt.bar(['Previous Month', 'Current Month'], [previous_month_data['quantity'].values[0], current_month_data['quantity'].values[0]])
+plt.title('Quantity Sold Comparison')
+plt.ylabel('Quantity')
+
+plt.tight_layout()
+plt.show()
+
+# Breakdown of sales by region and market segment
+region_segment_summary = sales.groupby(['region', 'market_segment']).agg({
+    'total_sales': 'sum'
+}).reset_index()
+
+# Plot sales by region and market segment
+plt.figure(figsize=(12, 6))
+
+# Pivot for easier plotting
+pivot_data = region_segment_summary.pivot(index='region', columns='market_segment', values='total_sales')
+pivot_data.plot(kind='bar', stacked=True, figsize=(12, 6))
+
+plt.title('Sales by Region and Market Segment')
+plt.ylabel('Total Sales')
+plt.xlabel('Region')
+plt.legend(title='Market Segment')
+plt.tight_layout()
+plt.show()
+
+# KPIs for AOV, CLV, and Profit Margin
+# Average Order Value (AOV)
+sales['order_value'] = sales['total_sales'] / sales['quantity']
+aov = sales['order_value'].mean()
+print(f"Average Order Value (AOV): ${aov:.2f}")
+
+# Customer Lifetime Value (CLV)
+clv = sales.groupby('customer_id').agg({'profit': 'sum'}).mean()['profit']
+print(f"Customer Lifetime Value (CLV): ${clv:.2f}")
+
+# Profit Margin
+sales['profit_margin'] = (sales['profit'] / sales['total_sales']) * 100
+profit_margin = sales['profit_margin'].mean()
+print(f"Profit Margin: {profit_margin:.2f}%")
+
+
+
+
+```
+### 4. Track sales growth or decline month-over-month and year-over-year.
+
+```{python}
+
+# Ensure date column is in datetime format
+sales['order_date'] = pd.to_datetime(sales['order_date'])
+
+# Extract year and month for grouping
+sales['year_month'] = sales['order_date'].dt.to_period('M')
+
+# Aggregate total sales, profit, and quantity by month
+monthly_summary = sales.groupby('year_month').agg({
+    'total_sales': 'sum',
+    'profit': 'sum',
+    'quantity': 'sum'
+}).reset_index()
+
+# Sort by year and month
+monthly_summary = monthly_summary.sort_values('year_month')
+
+# Get the current and previous months
+define_last_two_months = monthly_summary['year_month'].iloc[-2:]
+current_month, previous_month = define_last_two_months
+
+# Filter data for the current and previous months
+current_month_data = monthly_summary[monthly_summary['year_month'] == current_month]
+previous_month_data = monthly_summary[monthly_summary['year_month'] == previous_month]
+
+# Plot comparison of sales, profit, and quantity
+plt.figure(figsize=(15, 5))
+
+# Plot total sales comparison
+plt.subplot(1, 3, 1)
+plt.bar(['Previous Month', 'Current Month'], [previous_month_data['total_sales'].values[0], current_month_data['total_sales'].values[0]])
+plt.title('Total Sales Comparison')
+plt.ylabel('Total Sales')
+
+# Plot profit comparison
+plt.subplot(1, 3, 2)
+plt.bar(['Previous Month', 'Current Month'], [previous_month_data['profit'].values[0], current_month_data['profit'].values[0]])
+plt.title('Profit Comparison')
+plt.ylabel('Profit')
+
+# Plot quantity comparison
+plt.subplot(1, 3, 3)
+plt.bar(['Previous Month', 'Current Month'], [previous_month_data['quantity'].values[0], current_month_data['quantity'].values[0]])
+plt.title('Quantity Sold Comparison')
+plt.ylabel('Quantity')
+
+plt.tight_layout()
+plt.show()
+
+# Breakdown of sales by region and market segment
+region_segment_summary = sales.groupby(['region', 'market_segment']).agg({
+    'total_sales': 'sum'
+}).reset_index()
+
+# Plot sales by region and market segment
+plt.figure(figsize=(12, 6))
+
+# Pivot for easier plotting
+pivot_data = region_segment_summary.pivot(index='region', columns='market_segment', values='total_sales')
+pivot_data.plot(kind='bar', stacked=True, figsize=(12, 6))
+
+plt.title('Sales by Region and Market Segment')
+plt.ylabel('Total Sales')
+plt.xlabel('Region')
+plt.legend(title='Market Segment')
+plt.tight_layout()
+plt.show()
+
+# KPIs for AOV, CLV, and Profit Margin
+# Average Order Value (AOV)
+sales['order_value'] = sales['total_sales'] / sales['quantity']
+aov = sales['order_value'].mean()
+print(f"Average Order Value (AOV): ${aov:.2f}")
+
+# Customer Lifetime Value (CLV)
+clv = sales.groupby('customer_id').agg({'profit': 'sum'}).mean()['profit']
+print(f"Customer Lifetime Value (CLV): ${clv:.2f}")
+
+# Profit Margin
+sales['profit_margin'] = (sales['profit'] / sales['total_sales']) * 100
+profit_margin = sales['profit_margin'].mean()
+print(f"Profit Margin: {profit_margin:.2f}%")
+
+# Sales growth/decline MoM and YoY
+monthly_summary['total_sales_shift_mom'] = monthly_summary['total_sales'].shift(1)
+monthly_summary['sales_growth_mom'] = ((monthly_summary['total_sales'] - monthly_summary['total_sales_shift_mom']) / monthly_summary['total_sales_shift_mom']) * 100
+
+monthly_summary['total_sales_shift_yoy'] = monthly_summary['total_sales'].shift(12)
+monthly_summary['sales_growth_yoy'] = ((monthly_summary['total_sales'] - monthly_summary['total_sales_shift_yoy']) / monthly_summary['total_sales_shift_yoy']) * 100
+
+# Plot MoM and YoY growth
+plt.figure(figsize=(12, 6))
+plt.plot(monthly_summary['year_month'].astype(str), monthly_summary['sales_growth_mom'], label='MoM Growth (%)', marker='o')
+plt.plot(monthly_summary['year_month'].astype(str), monthly_summary['sales_growth_yoy'], label='YoY Growth (%)', marker='o')
+plt.title('Sales Growth: Month-over-Month and Year-over-Year')
+plt.xlabel('Month')
+plt.ylabel('Growth (%)')
+plt.legend()
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+
+
+```
+### 5. Provide a visual report of sales trends over time using date-based aggregations
+
+```{python}
+
+
+
+
+```

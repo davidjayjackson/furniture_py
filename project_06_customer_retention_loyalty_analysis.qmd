@@ -1,0 +1,314 @@
+---
+title: "Furniture Mark Sales Analysis"
+subtitle:  "Project 6: Customer Retention and Loyalty Analysis"
+format:
+  html:
+    page-layout: full
+    embed-resources: true
+    grid:
+      body-width: 1200px
+    fontsize: 10pt
+  pdf: default
+echo: false
+warning: false
+toc: true
+jupyter: python3
+---
+```{python}
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from itables import show
+
+# Load the sales data (adjust the file path as needed)
+sales = pd.read_excel('./furniture.xlsx')
+# Convert date columns to datetime
+sales['order_date'] = pd.to_datetime(sales['order_date'])
+sales['ship_date'] = pd.to_datetime(sales['ship_date'])
+
+# sales.shape
+```
+```{python}
+# sales.dtypes
+```
+```{python}
+# sales.isnull().sum()
+```
+#  Objective: Analyze customer retention and create strategies for improving customer loyalty
+
+## 1. Calculate the retention rate by analyzing customers who made repeat purchases in consecutive  years.
+```{python}
+
+if sales is not None:
+    # Ensure 'order_date' is in datetime format
+    sales['order_date'] = pd.to_datetime(sales['order_date'])
+
+    # Extract year from order_date
+    sales['year'] = sales['order_date'].dt.year
+
+    # Calculate retention rate
+    retention_data = sales.groupby(['customer_id', 'year']).size().reset_index(name='order_count')
+
+    # Identify customers with repeat purchases in consecutive years
+    retention_data['repeat_purchase'] = retention_data['customer_id'].isin(
+        retention_data['customer_id'].shift()[(retention_data['year'] - retention_data['year'].shift() == 1)]
+    )
+
+    # Calculate retention rate by year
+    retention_rate = retention_data.groupby('year')['repeat_purchase'].mean().reset_index()
+
+    # Plot retention rate
+    plt.figure(figsize=(10, 6))
+    plt.plot(retention_rate['year'], retention_rate['repeat_purchase'], marker='o')
+    plt.title('Customer Retention Rate by Year')
+    plt.xlabel('Year')
+    plt.ylabel('Retention Rate')
+    plt.grid(True)
+    plt.show()
+else:
+    print("The 'sales' sheet is missing or has no relevant data.")
+
+
+
+
+```
+```{python}
+if sales is not None:
+    # Ensure 'order_date' is in datetime format
+    sales['order_date'] = pd.to_datetime(sales['order_date'])
+
+    # Extract year from order_date
+    sales['year'] = sales['order_date'].dt.year
+
+    # Calculate retention data
+    retention_data = sales.groupby(['customer_id', 'year']).size().reset_index(name='order_count')
+
+    # Identify retention years per customer
+    retention_years = retention_data.groupby('customer_id')['year'].nunique().reset_index()
+    retention_years.columns = ['customer_id', 'retention_years']
+
+    # Find top 10 customers with the longest retention
+    top_customers = retention_years.sort_values(by='retention_years', ascending=False).head(10)
+
+    # Plot top 10 customers with longest retention
+    plt.figure(figsize=(12, 8))
+    plt.bar(top_customers['customer_id'].astype(str), top_customers['retention_years'], color='skyblue')
+    plt.title('Top 10 Customers with Longest Retention', fontsize=16)
+    plt.xlabel('Customer ID', fontsize=12)
+    plt.ylabel('Retention Years', fontsize=12)
+    plt.xticks(rotation=45)
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.show()
+else:
+    print("The 'sales' sheet is missing or has no relevant data.")
+```
+
+## 2. Identify customers who have not made a purchase in over 12 months and create a list for a  re-engagement marketing campaign.
+
+ ```{python}
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Path to the uploaded file
+file_path = 'furniture.xlsx'
+
+# Load the Excel file and list all sheet names
+excel_file = pd.ExcelFile(file_path)
+sheet_names = excel_file.sheet_names
+
+# Load the specific 'sales' DataFrame
+sales = excel_file.parse('sales')
+
+if sales is not None:
+    # Ensure 'order_date' is in datetime format
+    sales['order_date'] = pd.to_datetime(sales['order_date'])
+
+    # Extract year from order_date
+    sales['year'] = sales['order_date'].dt.year
+
+    # Calculate retention data
+    retention_data = sales.groupby(['customer_id', 'year']).size().reset_index(name='order_count')
+
+    # Identify retention years per customer
+    retention_years = retention_data.groupby('customer_id')['year'].nunique().reset_index()
+    retention_years.columns = ['customer_id', 'retention_years']
+
+    # Find top 10 customers with the longest retention
+    top_customers = retention_years.sort_values(by='retention_years', ascending=False).head(10)
+
+    # Plot top 10 customers with longest retention
+    plt.figure(figsize=(12, 8))
+    plt.bar(top_customers['customer_id'].astype(str), top_customers['retention_years'], color='skyblue')
+    plt.title('Top 10 Customers with Longest Retention', fontsize=16)
+    plt.xlabel('Customer ID', fontsize=12)
+    plt.ylabel('Retention Years', fontsize=12)
+    plt.xticks(rotation=45)
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.show()
+
+    # Identify customers who have not made a purchase since 2023-06-01
+    reference_date = pd.Timestamp('2020-01-01')
+    sales['days_since_reference'] = (reference_date - sales['order_date']).dt.days
+    inactive_customers = sales.groupby('customer_id').tail(1)
+    reengagement_list = inactive_customers[inactive_customers['days_since_reference'] > 0][['customer_id', 'days_since_reference']]
+
+    # Display the re-engagement list
+    print("Re-engagement Marketing Campaign List:")
+    print(reengagement_list)
+
+    # Plot customers who have not made a purchase since 2023-06-01
+    if not reengagement_list.empty:
+        plt.figure(figsize=(12, 8))
+        plt.bar(reengagement_list['customer_id'].astype(str), reengagement_list['days_since_reference'], color='orange')
+        plt.title('Customers with No Purchases Since 2023-06-01', fontsize=16)
+        plt.xlabel('Customer ID', fontsize=12)
+        plt.ylabel('Days Since Last Purchase', fontsize=12)
+        plt.xticks(rotation=45)
+        plt.grid(axis='y', linestyle='--', alpha=0.7)
+        plt.show()
+    else:
+        print("All customers have made a purchase since 2023-06-01.")
+
+
+
+
+```
+
+## 3. Create a customer lifetime value (CLV) metric that calculates the total profit from each customer  over time.
+
+```{python}
+# Calculate Customer Lifetime Value (CLV)
+clv = sales.groupby('customer_id').agg({
+    'profit': 'sum',
+    'customer_name': 'first'
+}).reset_index()
+
+clv = clv.rename(columns={'profit': 'total_profit'})
+
+# Sort by total profit for visualization
+clv = clv.sort_values(by='total_profit', ascending=False)
+
+# Select top 10 customers
+top_10_clv = clv.head(10)
+
+# Plot CLV for top 10 customers
+import matplotlib.pyplot as plt
+
+plt.figure(figsize=(12, 6))
+plt.bar(top_10_clv['customer_name'], top_10_clv['total_profit'], color='skyblue')
+plt.xticks(rotation=90)
+plt.xlabel('Customer Name')
+plt.ylabel('Total Profit')
+plt.title('Top 10 Customers by Lifetime Value (CLV)')
+plt.tight_layout()
+plt.show()
+
+
+```
+
+## 4. Determine which customer segments (market segments, regions) have the highest and lowest  retention rates.
+
+```{python}
+
+# Determine retention rates by market segment and region
+sales['order_year'] = sales['order_date'].dt.year
+first_purchase = sales.groupby('customer_id')['order_year'].min().reset_index()
+first_purchase = first_purchase.rename(columns={'order_year': 'first_purchase_year'})
+sales = sales.merge(first_purchase, on='customer_id')
+
+# Define retention as customers with orders beyond their first purchase year
+sales['is_retained'] = sales['order_year'] > sales['first_purchase_year']
+
+# Calculate retention rates by market segment and region
+retention_by_segment = sales.groupby('market_segment')['is_retained'].mean().reset_index()
+retention_by_region = sales.groupby('region')['is_retained'].mean().reset_index()
+
+# Sort retention rates by value
+retention_by_segment = retention_by_segment.sort_values(by='is_retained', ascending=False)
+retention_by_region = retention_by_region.sort_values(by='is_retained', ascending=False)
+
+# Plot retention rates
+plt.figure(figsize=(12, 6))
+plt.bar(retention_by_segment['market_segment'], retention_by_segment['is_retained'], color='green')
+for index, value in enumerate(retention_by_segment['is_retained']):
+    plt.text(index, value, f'{value:.2%}', ha='center', va='bottom')
+plt.xticks(rotation=90)
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.xlabel('Market Segment')
+plt.ylabel('Retention Rate')
+plt.title('Retention Rate by Market Segment')
+plt.tight_layout()
+plt.show()
+
+plt.figure(figsize=(12, 6))
+plt.bar(retention_by_region['region'], retention_by_region['is_retained'], color='orange')
+for index, value in enumerate(retention_by_region['is_retained']):
+    plt.text(index, value, f'{value:.2%}', ha='center', va='bottom')
+plt.xticks(rotation=90)
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.xlabel('Region')
+plt.ylabel('Retention Rate')
+plt.title('Retention Rate by Region')
+plt.tight_layout()
+plt.show()
+
+```
+
+## 5. Track customer purchasing patterns and identify potential churn risks based on inactivity or  reduced purchasing frequency.
+
+
+```{python}
+# Track customer purchasing patterns and identify churn risks
+from datetime import datetime
+
+# Calculate the time since the last purchase for each customer
+latest_order_date = sales.groupby('customer_id')['order_date'].max().reset_index()
+latest_order_date = latest_order_date.rename(columns={'order_date': 'last_order_date'})
+sales = sales.merge(latest_order_date, on='customer_id')
+
+# Define the current date for analysis (or use max order date from data)
+current_date = sales['order_date'].max()
+sales['days_since_last_order'] = (current_date - sales['last_order_date']).dt.days
+
+# Define churn risk based on inactivity threshold (e.g., 180 days)
+churn_threshold = 180
+sales['churn_risk'] = sales['days_since_last_order'] > churn_threshold
+
+# Calculate average purchasing frequency for each customer
+purchasing_frequency = sales.groupby('customer_id').agg({
+    'order_id': 'count',
+    'days_since_last_order': 'mean'
+}).reset_index()
+purchasing_frequency = purchasing_frequency.rename(columns={'order_id': 'total_orders'})
+
+# Identify top 10 customers with highest churn risk
+churn_risk_customers = sales[sales['churn_risk']].sort_values(by='days_since_last_order', ascending=False)
+top_10_churn_risk = churn_risk_customers[['customer_id', 'customer_name', 'days_since_last_order']].head(10)
+
+# print("Top 10 Customers with Highest Churn Risk:")
+# print(top_10_churn_risk)
+
+# Plot top 10 customers with highest churn risk
+plt.figure(figsize=(12, 6))
+plt.bar(top_10_churn_risk['customer_name'], top_10_churn_risk['days_since_last_order'], color='red')
+for index, value in enumerate(top_10_churn_risk['days_since_last_order']):
+    plt.text(index, value, f'{value} days', ha='center', va='bottom')
+plt.xticks(rotation=90)
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.xlabel('Customer Name')
+plt.ylabel('Days Since Last Order')
+plt.title('Top 10 Customers with Highest Churn Risk')
+plt.tight_layout()
+plt.show()
+
+# Plot customers with churn risk
+plt.figure(figsize=(12, 6))
+plt.hist(churn_data['days_since_last_order'], bins=20, color='red', alpha=0.7)
+plt.xlabel('Days Since Last Order')
+plt.ylabel('Number of Customers')
+plt.title('Distribution of Days Since Last Order for Churn Risk Customers')
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.tight_layout()
+plt.show()
+```

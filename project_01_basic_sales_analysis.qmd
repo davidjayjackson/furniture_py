@@ -1,7 +1,17 @@
 ---
 title: "Furniture Mark Sales Analysis"
 subtitle:  "Project 1: Basic Sales Reporting"
-format: html
+format:
+  html:
+    page-layout: full
+    embed-resources: true
+    grid:
+      body-width: 1200px
+ #   fontsize: 18pt
+  pdf: default
+echo: false
+warning: false
+toc: true
 jupyter: python3
 ---
 ```{python}
@@ -16,9 +26,7 @@ sales = pd.read_excel('./furniture.xlsx')
 sales['order_date'] = pd.to_datetime(sales['order_date'])
 sales['ship_date'] = pd.to_datetime(sales['ship_date'])
 ```
-```{python}
-sales[['quantity','total_sales','profit']].describe()
-```
+
 ## Table of Contents
 
  1. Generate a report that shows total sales, total quantity, and total profit for the entire year.
@@ -26,6 +34,13 @@ sales[['quantity','total_sales','profit']].describe()
  3. Provide a breakdown of sales by product category and sub-category.
  4. Identify the top 10 products by total sales.
  5. Write queries that summarize total sales, total profit, and total discount by shipping mode.
+
+# Quick Summary
+
+```{python}
+sales[['quantity','total_sales','profit']].describe()
+```
+
 
 ##  1. Generate a report that shows total sales, total quantity, and total profit for the entire year
 
@@ -188,10 +203,156 @@ plt.show()
 ##  4. Identify the top 10 products by total sales
 
 ```{python}
+from itables import show
+
+# Group data by product_name and calculate total sales
+top_products = sales.groupby('product_name').agg({
+    'total_sales': 'sum'
+}).reset_index()
+
+# Sort products by total sales in descending order and select the top 10
+top_10_products = top_products.sort_values(by='total_sales', ascending=False).head(10)
+
+# Rename columns for clarity
+top_10_products.rename(columns={'product_name': 'Product Name', 'total_sales': 'Total Sales'}, inplace=True)
+
+# Display the top 10 products interactively
+show(top_10_products)
+
+# Plotting the top 10 products
+import matplotlib.pyplot as plt
+
+plt.figure(figsize=(12, 8))
+plt.barh(top_10_products['Product Name'], top_10_products['Total Sales'], color='skyblue', alpha=0.7)
+plt.title('Top 10 Products by Total Sales')
+plt.xlabel('Total Sales')
+plt.ylabel('Product Name')
+plt.gca().invert_yaxis()  # Invert y-axis to display the highest sales at the top
+plt.grid(axis='x', linestyle='--', alpha=0.7)
+plt.tight_layout()
+plt.show()
 
 
 ```
 
-##  Write queries that summarize total sales, total profit, and total discount by shipping mode.
+#
 
 ```{python}
+# Ensure order_date is in datetime format
+sales['order_date'] = pd.to_datetime(sales['order_date'])
+
+# Extract the year from order_date
+sales['year'] = sales['order_date'].dt.year
+
+# Group data by year and product_name, and calculate total sales
+yearly_product_sales = sales.groupby(['year', 'product_name']).agg({
+    'total_sales': 'sum'
+}).reset_index()
+
+# Sort the data by year and total sales within each year
+yearly_product_sales = yearly_product_sales.sort_values(by=['year', 'total_sales'], ascending=[True, False])
+
+# Select the top 3 products for each year
+top_3_products_per_year = yearly_product_sales.groupby('year').head(3)
+
+# Rename columns for clarity
+top_3_products_per_year.rename(columns={'product_name': 'Product Name', 'total_sales': 'Total Sales', 'year': 'Year'}, inplace=True)
+
+# Display the top 3 products for each year interactively
+from itables import show
+show(top_3_products_per_year)
+
+# Plotting
+import matplotlib.pyplot as plt
+
+plt.figure(figsize=(12, 8))
+for year in top_3_products_per_year['Year'].unique():
+    year_data = top_3_products_per_year[top_3_products_per_year['Year'] == year]
+    plt.barh(year_data['Product Name'], year_data['Total Sales'], label=f'Year {year}', alpha=0.7)
+
+plt.title('Top 3 Products by Total Sales for Each Year')
+plt.xlabel('Total Sales')
+plt.ylabel('Product Name')
+plt.legend(title='Year')
+plt.gca().invert_yaxis()  # Invert y-axis for better readability
+plt.tight_layout()
+plt.show()
+
+
+
+```
+
+## 5. Write queries that summarize total sales, total profit, and total discount by shipping mode.
+
+```{python}
+
+# Group data by ship_mode and calculate total sales, total profit, and total discount
+shipping_mode_summary = sales.groupby('ship_mode').agg({
+    'total_sales': 'sum',
+    'profit': 'sum',
+    'discount': 'sum'
+}).reset_index()
+
+# Rename columns for better readability
+shipping_mode_summary.rename(columns={
+    'ship_mode': 'Shipping Mode',
+    'total_sales': 'Total Sales',
+    'profit': 'Total Profit',
+    'discount': 'Total Discount'
+}, inplace=True)
+
+# Display the summary table interactively using itables
+from itables import show
+show(shipping_mode_summary)
+
+
+
+```
+```{python}
+import matplotlib.pyplot as plt
+
+# Group data by ship_mode and calculate total sales, total profit, and total discount
+shipping_mode_summary = sales.groupby('ship_mode').agg({
+    'total_sales': 'sum',
+    'profit': 'sum',
+    'discount': 'sum'
+}).reset_index()
+
+# Rename columns for better readability
+shipping_mode_summary.rename(columns={
+    'ship_mode': 'Shipping Mode',
+    'total_sales': 'Total Sales',
+    'profit': 'Total Profit',
+    'discount': 'Total Discount'
+}, inplace=True)
+
+# Plot Total Sales by Shipping Mode
+plt.figure(figsize=(10, 6))
+plt.bar(shipping_mode_summary['Shipping Mode'], shipping_mode_summary['Total Sales'], color='skyblue', alpha=0.7)
+plt.title('Total Sales by Shipping Mode')
+plt.xlabel('Shipping Mode')
+plt.ylabel('Total Sales')
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.tight_layout()
+plt.show()
+
+# Plot Total Profit by Shipping Mode
+plt.figure(figsize=(10, 6))
+plt.bar(shipping_mode_summary['Shipping Mode'], shipping_mode_summary['Total Profit'], color='green', alpha=0.7)
+plt.title('Total Profit by Shipping Mode')
+plt.xlabel('Shipping Mode')
+plt.ylabel('Total Profit')
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.tight_layout()
+plt.show()
+
+# Plot Total Discount by Shipping Mode
+plt.figure(figsize=(10, 6))
+plt.bar(shipping_mode_summary['Shipping Mode'], shipping_mode_summary['Total Discount'], color='orange', alpha=0.7)
+plt.title('Total Discount by Shipping Mode')
+plt.xlabel('Shipping Mode')
+plt.ylabel('Total Discount')
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.tight_layout()
+plt.show()
+```
